@@ -1,20 +1,31 @@
 {
-  "name": "WorklynesiaService",
+  "name": "worklynesia",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
     "dev": "turbo run dev",
+    "start:dev": "turbo run start:dev",
+    "build": "turbo run build",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
     "prettier": "^3.6.0",
+    "prisma": "^6.11.0",
     "turbo": "^2.5.4",
     "typescript": "5.8.2"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.11.0"
   }
 }

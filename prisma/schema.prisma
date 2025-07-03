@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+model UserProfile  {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  fullName    String    @map("full_name")
+  avatarUrl   String?   @map("avatar_url")
+  phoneNumber String?   @map("phone_number")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("user_profiles")
+}
+
+model UserAuth {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  password    String
+  role        UserRole  @default(user)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("user_auths")
+}
