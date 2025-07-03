@@ -2,21 +2,48 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Post,
+  Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { JwtAuthGuard } from './guards/jwt.guard';
 import { AuthService } from './auth.service';
-import { jwtConfig } from './config/jwt.config';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiCookieAuth,
+  ApiBody,
+} from '@nestjs/swagger';
+import {
+  AuthResponseDto,
+  LoginDto,
+  MessageResponseDto,
+  RefreshTokenDto,
+  RegisterDto,
+} from './dto/auth.dto';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private readonly logger = new Logger(AuthController.name);
+
   @Post('login')
+  @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully logged in',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
-    @Body() credentials: { email: string; password: string },
+    @Body() credentials: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ) {
     const { user, tokens } = await this.authService.login(
@@ -26,54 +53,102 @@ export class AuthController {
       ),
     );
 
-    this.setTokenCookies(response, tokens);
+    this.authService.setTokenCookies(response, tokens, credentials.rememberMe);
     return { user };
   }
 
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({
+    status: 201,
+    description: 'Tokens refreshed successfully',
+    type: MessageResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refresh(
-    @Body('refreshToken') refreshToken: string,
+    @Body() refreshTokenDto: RefreshTokenDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    if (!refreshToken) {
+    if (!refreshTokenDto.refreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }
 
-    const tokens = await this.authService.refreshTokens(refreshToken);
-    this.setTokenCookies(response, tokens);
+    const tokens = await this.authService.refreshTokens(
+      refreshTokenDto.refreshToken,
+    );
+    this.authService.setTokenCookies(response, tokens);
     return { message: 'Tokens refreshed successfully' };
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully logged out',
+    type: MessageResponseDto,
+  })
   logout(@Res({ passthrough: true }) response: Response) {
-    this.clearTokenCookies(response);
+    this.authService.clearTokenCookies(response);
     return { message: 'Logged out successfully' };
   }
 
   @Get('me')
-  getProfile() {
-    // TODO: Implement get current user profile
-    // This will be protected by JWT guard
-    return { message: 'Protected route' };
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiCookieAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the current user profile',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfile(@Req() request: Request & { user: { sub: string } }) {
+    const user = await this.authService.findUserById(request.user.sub);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...safeUser } = user;
+    return { user: safeUser };
   }
 
-  private setTokenCookies(
-    response: Response,
-    tokens: { accessToken: string; refreshToken: string },
+  @Post('register')
+  @ApiOperation({ summary: 'Register new user' })
+  @ApiBody({
+    type: RegisterDto,
+    description: 'User registration credentials',
+    examples: {
+      user: {
+        summary: 'Regular User',
+        value: {
+          email: 'user@example.com',
+          password: 'securepassword123',
+          role: 'user',
+        },
+      },
+      admin: {
+        summary: 'Admin User',
+        value: {
+          email: 'admin@example.com',
+          password: 'adminpassword123',
+          role: 'admin',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async register(
+    @Body() user: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
   ) {
-    response.cookie('accessToken', tokens.accessToken, {
-      ...jwtConfig.cookie,
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    response.cookie('refreshToken', tokens.refreshToken, {
-      ...jwtConfig.cookie,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-  }
-
-  private clearTokenCookies(response: Response) {
-    response.clearCookie('accessToken', jwtConfig.cookie);
-    response.clearCookie('refreshToken', jwtConfig.cookie);
+    const { user: registeredUser, tokens } =
+      await this.authService.register(user);
+    this.authService.setTokenCookies(response, tokens, user.rememberMe);
+    return { user: registeredUser };
   }
 }

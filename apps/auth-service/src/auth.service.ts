@@ -5,7 +5,9 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@worklynesia/common';
 import { AuthResponse, JwtPayload, SafeUser } from './types/user.types';
 import { jwtConfig } from './config/jwt.config';
-import { UserAuth } from '@prisma/client';
+import { UserAuth, UserRole } from '@prisma/client';
+import { RegisterDto } from './dto/auth.dto';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -57,6 +59,26 @@ export class AuthService {
     }
   }
 
+  async register(user: RegisterDto) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+
+    const userResponse = await this.prisma.userAuth.create({
+      data: {
+        email: user.email,
+        password: hashedPassword,
+        role: user.role,
+      },
+    });
+
+    const tokens = await this.generateTokens(userResponse);
+    const { password: _, ...safeUser } = userResponse;
+
+    return {
+      user: safeUser,
+      tokens,
+    };
+  }
+
   private async generateTokens(user: UserAuth) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -96,7 +118,30 @@ export class AuthService {
     return this.prisma.userAuth.findUnique({ where: { email } });
   }
 
-  private async findUserById(id: string): Promise<UserAuth | null> {
+  async findUserById(id: string): Promise<UserAuth | null> {
     return this.prisma.userAuth.findUnique({ where: { id } });
+  }
+
+  setTokenCookies(
+    response: Response,
+    tokens: { accessToken: string; refreshToken: string },
+    rememberMe: boolean = false,
+  ) {
+    // Access token cookie (always set)
+    response.cookie('accessToken', tokens.accessToken, {
+      ...jwtConfig.cookie,
+    });
+
+    // Refresh token cookie (only set if rememberMe is true)
+    if (rememberMe) {
+      response.cookie('refreshToken', tokens.refreshToken, {
+        ...jwtConfig.cookie,
+      });
+    }
+  }
+
+  clearTokenCookies(response: Response) {
+    response.clearCookie('accessToken', jwtConfig.cookie);
+    response.clearCookie('refreshToken', jwtConfig.cookie);
   }
 }
