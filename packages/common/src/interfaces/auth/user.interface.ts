@@ -1,6 +1,6 @@
-import { UserAuth } from '@prisma/client';
+import { UserAuth } from "@prisma/client";
 
-export type SafeUser = Omit<UserAuth, 'password'>;
+export type SafeUser = Omit<UserAuth, "password">;
 
 export interface Tokens {
   accessToken: string;
@@ -12,7 +12,7 @@ export interface AuthResponse {
   tokens: Tokens;
 }
 
-export interface JwtPayload {
+export interface JwtPayloadUser {
   sub: string;
   email: string;
   role: string;

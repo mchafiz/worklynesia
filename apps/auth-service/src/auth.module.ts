@@ -3,20 +3,36 @@ import { Module, Logger } from '@nestjs/common';
 // import { AuthService } from './auth.service';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConfig } from './config/jwt.config';
-import { PrismaModule } from '@worklynesia/common';
+import { jwtConfig, PrismaModule } from '@worklynesia/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { PassportModule } from '@nestjs/passport';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
+    ClientsModule.register([
+      {
+        name: 'KAFKA_CLIENT',
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'],
+            clientId: 'auth-service',
+          },
+          consumer: {
+            groupId: 'auth-consumer',
+          },
+          producer: {
+            allowAutoTopicCreation: true,
+          },
+        },
+      },
+    ]),
+
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
     }),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
     PrismaModule,
     JwtModule.register({
       global: true,
@@ -25,6 +41,6 @@ import { PassportModule } from '@nestjs/passport';
     }),
   ],
   controllers: [AuthController],
-  providers: [Logger, AuthService, JwtStrategy],
+  providers: [Logger, AuthService],
 })
 export class AuthModule {}

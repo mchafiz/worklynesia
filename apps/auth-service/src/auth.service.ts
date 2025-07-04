@@ -1,16 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '@worklynesia/common';
-import { AuthResponse, JwtPayload, SafeUser } from './types/user.types';
-import { jwtConfig } from './config/jwt.config';
-import { UserAuth, UserRole } from '@prisma/client';
-import { RegisterDto } from './dto/auth.dto';
-import { Response } from 'express';
-
+import {
+  AuthResponse,
+  jwtConfig,
+  JwtPayloadUser,
+  PrismaService,
+  RegisterDto,
+  SafeUser,
+} from '@worklynesia/common';
+import { UserAuth } from '@prisma/client';
 @Injectable()
 export class AuthService {
+  private readonly refreshConfig = {
+    secret: jwtConfig.refreshToken.secret,
+    expiresIn: jwtConfig.refreshToken.expiresIn,
+  };
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -18,12 +23,7 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<UserAuth> {
     const user = await this.findUserByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -41,11 +41,9 @@ export class AuthService {
 
   async refreshTokens(refreshToken: string) {
     try {
-      const decoded = await this.jwtService.verifyAsync<JwtPayload>(
+      const decoded = await this.jwtService.verifyAsync<JwtPayloadUser>(
         refreshToken,
-        {
-          secret: jwtConfig.refreshToken.secret,
-        },
+        this.refreshConfig,
       );
 
       const user = await this.findUserById(decoded.sub);
@@ -62,7 +60,7 @@ export class AuthService {
   async register(user: RegisterDto) {
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
-    const userResponse = await this.prisma.userAuth.create({
+    const createdUser = await this.prisma.userAuth.create({
       data: {
         email: user.email,
         password: hashedPassword,
@@ -70,37 +68,29 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(userResponse);
-    const { password: _, ...safeUser } = userResponse;
+    const tokens = await this.generateTokens(createdUser);
 
     return {
-      user: safeUser,
+      user: this.sanitizeUser(createdUser),
       tokens,
     };
   }
 
-  private async generateTokens(user: UserAuth) {
+  private async generateTokens(
+    user: UserAuth,
+  ): Promise<AuthResponse['tokens']> {
+    const accessPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const refreshPayload = {
+      sub: user.id,
+    };
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        },
-        {
-          secret: jwtConfig.accessToken.secret,
-          expiresIn: jwtConfig.accessToken.expiresIn,
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: user.id,
-        },
-        {
-          secret: jwtConfig.refreshToken.secret,
-          expiresIn: jwtConfig.refreshToken.expiresIn,
-        },
-      ),
+      this.jwtService.signAsync(accessPayload),
+      this.jwtService.signAsync(refreshPayload, this.refreshConfig),
     ]);
 
     return {
@@ -110,6 +100,7 @@ export class AuthService {
   }
 
   private sanitizeUser(user: UserAuth): SafeUser {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...sanitized } = user;
     return sanitized;
   }
@@ -120,28 +111,5 @@ export class AuthService {
 
   async findUserById(id: string): Promise<UserAuth | null> {
     return this.prisma.userAuth.findUnique({ where: { id } });
-  }
-
-  setTokenCookies(
-    response: Response,
-    tokens: { accessToken: string; refreshToken: string },
-    rememberMe: boolean = false,
-  ) {
-    // Access token cookie (always set)
-    response.cookie('accessToken', tokens.accessToken, {
-      ...jwtConfig.cookie,
-    });
-
-    // Refresh token cookie (only set if rememberMe is true)
-    if (rememberMe) {
-      response.cookie('refreshToken', tokens.refreshToken, {
-        ...jwtConfig.cookie,
-      });
-    }
-  }
-
-  clearTokenCookies(response: Response) {
-    response.clearCookie('accessToken', jwtConfig.cookie);
-    response.clearCookie('refreshToken', jwtConfig.cookie);
   }
 }
