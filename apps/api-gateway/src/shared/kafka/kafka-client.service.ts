@@ -15,6 +15,10 @@ export class KafkaClientService implements OnModuleInit {
       'create.user',
       'update.user',
       'delete.user',
+      'register.user',
+      'attendance.checkIn',
+      'attendance.checkOut',
+      'attendance.history',
     ];
 
     topics.forEach((topic) => {

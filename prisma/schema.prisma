@@ -12,7 +12,7 @@ enum UserRole {
   admin
 }
 
-model UserProfile  {
+model UserProfile {
   id          String    @id @default(uuid())
   email       String    @unique
   fullName    String    @map("full_name")
@@ -22,19 +22,70 @@ model UserProfile  {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
+  attendances Attendance[] // ← ini relasi baliknya
+
   @@map("user_profiles")
 }
 
 model UserAuth {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  password    String
-  role        UserRole  @default(user)
-  mustChangePassword Boolean @default(true)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  password           String
+  role               UserRole  @default(user)
+  mustChangePassword Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
 
   @@map("user_auths")
 }
+
+model Attendance {
+  id          String    @id @default(uuid())
+  userId      String
+  date        DateTime  @map("attendance_date")
+  checkInAt   DateTime? @map("check_in_at")
+  checkOutAt  DateTime? @map("check_out_at")
+  locationIn  String?   @map("location_in")
+  locationOut String?   @map("location_out")
+
+  // Koordinat saat check-in
+  locationInLat String? @map("location_in_lat")
+  locationInLng String? @map("location_in_lng")
+
+  // Koordinat saat check-out
+  locationOutLat String? @map("location_out_lat")
+  locationOutLng String? @map("location_out_lng")
+
+  status AttendanceStatus @default(wfh)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user UserProfile @relation(fields: [userId], references: [id])
+
+  @@index([userId, date])
+  @@map("attendances")
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  leave
+  sick
+  wfh
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  title      String
+  message    String
+  timestamp  DateTime @default(now())
+  metadata   Json?  
+
+  @@index([userId])
+  @@map("notifications")
+}
+

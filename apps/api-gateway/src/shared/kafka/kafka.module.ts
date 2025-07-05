@@ -17,6 +17,7 @@ import { KafkaClientService } from './kafka-client.service';
             },
             consumer: {
               groupId: 'api-gateway-consumer',
+              allowAutoTopicCreation: true,
             },
           },
         }),

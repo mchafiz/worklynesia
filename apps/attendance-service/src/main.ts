@@ -1,22 +1,19 @@
 import { NestFactory } from '@nestjs/core';
+import { AppModule } from './attendance.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AuthModule } from './auth.module';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    AuthModule,
+    AppModule,
     {
       transport: Transport.KAFKA,
       options: {
         client: {
-          clientId: 'auth-service',
+          clientId: 'absensi-service',
           brokers: ['localhost:9092'],
         },
         consumer: {
-          groupId: 'auth-consumer',
-          allowAutoTopicCreation: true,
-        },
-        producer: {
+          groupId: 'absensi-consumer',
           allowAutoTopicCreation: true,
         },
       },

@@ -1,16 +1,18 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import {
   AuthResponse,
-  CreateUserDto,
+  // CreateUserDto,
   jwtConfig,
   JwtPayloadUser,
   PrismaService,
+  RegisterDto,
   SafeUser,
 } from '@worklynesia/common';
 import { UserAuth } from '@prisma/client';
@@ -25,8 +27,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  private readonly logger = new Logger(AuthService.name);
+
   async validateUser(email: string, password: string): Promise<UserAuth> {
     const user = await this.findUserByEmail(email);
+    this.logger.log(`User  validated masuk`);
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -65,8 +70,8 @@ export class AuthService {
     }
   }
 
-  async register(user: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash('defaultPassword', 10);
+  async register(user: RegisterDto) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
 
     if (!user.email || !user.role) {
       throw new BadRequestException('Invalid data');

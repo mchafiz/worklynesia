@@ -1,4 +1,4 @@
-export * from "./decorators/user.decorator";
+export * from "./decorators";
 export * from "./dtos";
 export * from "./events/user.event";
 export * from "./utils/hash.util";

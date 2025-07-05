@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConfig, JwtStrategy } from '@worklynesia/common';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UserModule } from './user/user.module';
     }),
     AuthModule,
     UserModule,
+    AttendanceModule,
   ],
   controllers: [],
   providers: [Logger, JwtStrategy],
