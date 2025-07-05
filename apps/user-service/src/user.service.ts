@@ -26,9 +26,16 @@ export class UserService {
 
   // Find user by id
   async findById(id: string): Promise<UserProfile> {
-    const user = await this.prisma.userProfile.findUnique({
-      where: { id, deletedAt: null },
+    const userAuth = await this.prisma.userAuth.findUnique({
+      where: { id },
     });
+
+    if (!userAuth) throw new NotFoundException('User not found');
+    const user = await this.prisma.userProfile.findUnique({
+      where: { email: userAuth?.email, deletedAt: null },
+    });
+
+    console.log(user);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Logger,
   Post,
   Res,
@@ -11,6 +12,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Response } from 'express';
 import {
   AuthResponseDto,
+  CurrentUser,
   JwtAuthGuard,
   LoginDto,
   MessageResponseDto,
@@ -20,6 +22,7 @@ import {
 
 import { jwtConfig } from '@worklynesia/common';
 import { KafkaClientService } from 'src/shared/kafka/kafka-client.service';
+import { UserAuth } from '@prisma/client';
 
 @ApiTags('Authentication API')
 @Controller()
@@ -100,6 +103,14 @@ export class AuthController {
     );
     this.logger.log(`User ${result.message} refreshed tokens successfully`);
     return result;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('auth/verify')
+  @ApiOperation({ summary: 'Verify authentication' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  verify(@CurrentUser() user: UserAuth) {
+    return { user };
   }
 
   @Post('auth/logout')

@@ -110,9 +110,15 @@ export class AuthService {
     const refreshPayload = {
       sub: user.id,
     };
+
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(accessPayload),
-      this.jwtService.signAsync(refreshPayload, this.refreshConfig),
+      this.jwtService.signAsync(accessPayload, {
+        expiresIn: jwtConfig.accessToken.expiresIn,
+      }),
+      this.jwtService.signAsync(refreshPayload, {
+        ...this.refreshConfig,
+        expiresIn: jwtConfig.refreshToken.expiresIn,
+      }),
     ]);
 
     return {
@@ -120,7 +126,6 @@ export class AuthService {
       refreshToken,
     };
   }
-
   private sanitizeUser(user: UserAuth): SafeUser {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...sanitized } = user;

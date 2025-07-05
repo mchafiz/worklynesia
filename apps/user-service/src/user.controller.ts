@@ -27,9 +27,17 @@ export class UserController {
     entityType: 'user',
     entityId: (params: string) => params,
   })
-  findById(id: string): Promise<UserProfile> {
+  async findById(id: string): Promise<UserProfile> {
     this.logger.log(`Finding user with id: ${id}`);
-    return this.userService.findById(id);
+
+    try {
+      const user: UserProfile = await this.userService.findById(id);
+      this.logger.log(`User found: ${user.email}`);
+      return user;
+    } catch {
+      this.logger.error(`Failed to find user with id: ${id}`);
+      throw new BadRequestException('User not found');
+    }
   }
 
   @EventPattern('create.user')

@@ -7,6 +7,7 @@ export const jwtConfig = {
     secret: process.env.JWT_REFRESH_SECRET || "super-secret-refresh",
     expiresIn: "7d",
   },
+  timezone: "Asia/Jakarta",
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
