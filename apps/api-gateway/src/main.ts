@@ -30,7 +30,8 @@ async function bootstrap() {
     .setTitle('API GATEWAY')
     .setDescription('Api Gateway API documentation')
     .setVersion('1.0')
-    .addTag('AUTH GATEWAY')
+    .addTag('Authentication API')
+    .addTag('User API')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

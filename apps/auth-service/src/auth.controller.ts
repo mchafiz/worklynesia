@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Inject,
@@ -8,8 +9,12 @@ import {
 
 import { AuthService } from './auth.service';
 import { ApiTags } from '@nestjs/swagger';
-import { ClientKafkaProxy, MessagePattern } from '@nestjs/microservices';
-import { LoginDto, RefreshTokenDto, RegisterDto } from '@worklynesia/common';
+import {
+  ClientKafkaProxy,
+  EventPattern,
+  MessagePattern,
+} from '@nestjs/microservices';
+import { CreateUserDto, LoginDto, RefreshTokenDto } from '@worklynesia/common';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -23,16 +28,20 @@ export class AuthController {
 
   @MessagePattern('login.user')
   async login(@Body() credentials: LoginDto) {
-    const { user, tokens } = await this.authService.login(
-      await this.authService.validateUser(
-        credentials.email,
-        credentials.password,
-      ),
-    );
+    try {
+      const { user, tokens } = await this.authService.login(
+        await this.authService.validateUser(
+          credentials.email,
+          credentials.password,
+        ),
+      );
 
-    this.logger.log(`User ${user.email} logged in successfully`);
+      this.logger.log(`User ${user.email} logged in successfully`);
 
-    return { user, tokens };
+      return { user, tokens };
+    } catch {
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
   @MessagePattern('refresh.token')
@@ -48,11 +57,19 @@ export class AuthController {
     return { tokens };
   }
 
-  @MessagePattern('register.user')
-  async register(@Body() user: RegisterDto) {
-    const { user: registeredUser, tokens } =
-      await this.authService.register(user);
+  @EventPattern('create.user')
+  async register(@Body() user: CreateUserDto) {
+    try {
+      const { user: registeredUser } = await this.authService.register(user);
 
-    return { user: registeredUser, tokens };
+      return { user: registeredUser };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) {
+        this.logger.warn(`Skipping user: ${error.message}`);
+      } else {
+        this.logger.error(`❌ Failed to create user: ${error}`);
+      }
+      // ⚠️ PENTING: JANGAN lempar error agar Kafka bisa commit offset
+    }
   }
 }

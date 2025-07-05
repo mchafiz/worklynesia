@@ -7,7 +7,15 @@ export class KafkaClientService implements OnModuleInit {
   constructor(@Inject('KAFKA_CLIENT') private readonly client: ClientKafka) {}
 
   async onModuleInit() {
-    const topics = ['register.user', 'login.user', 'refresh.token'];
+    const topics = [
+      'login.user',
+      'refresh.token',
+      'findAll.user',
+      'findById.user',
+      'create.user',
+      'update.user',
+      'delete.user',
+    ];
 
     topics.forEach((topic) => {
       this.client.subscribeToResponseOf(topic);

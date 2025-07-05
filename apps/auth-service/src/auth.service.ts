@@ -1,12 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import {
   AuthResponse,
+  CreateUserDto,
   jwtConfig,
   JwtPayloadUser,
   PrismaService,
-  RegisterDto,
   SafeUser,
 } from '@worklynesia/common';
 import { UserAuth } from '@prisma/client';
@@ -31,12 +35,16 @@ export class AuthService {
   }
 
   async login(user: UserAuth): Promise<AuthResponse> {
-    const tokens = await this.generateTokens(user);
+    try {
+      const tokens = await this.generateTokens(user);
 
-    return {
-      user: this.sanitizeUser(user),
-      tokens,
-    };
+      return {
+        user: this.sanitizeUser(user),
+        tokens,
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
   async refreshTokens(refreshToken: string) {
@@ -57,14 +65,23 @@ export class AuthService {
     }
   }
 
-  async register(user: RegisterDto) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
+  async register(user: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash('defaultPassword', 10);
+
+    if (!user.email || !user.role) {
+      throw new BadRequestException('Invalid data');
+    }
+
+    if (await this.findUserByEmail(user.email)) {
+      throw new BadRequestException('User already exists');
+    }
 
     const createdUser = await this.prisma.userAuth.create({
       data: {
         email: user.email,
         password: hashedPassword,
         role: user.role,
+        mustChangePassword: true,
       },
     });
 

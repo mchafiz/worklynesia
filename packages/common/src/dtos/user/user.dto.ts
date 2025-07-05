@@ -1,18 +1,11 @@
-export interface UserDto {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { UserRole } from "@prisma/client";
 
 export interface CreateUserDto {
   email: string;
-  name: string;
-  password: string;
+  fullName: string;
+  avatarUrl?: string;
+  phoneNumber?: string;
+  role: UserRole;
 }
 
-export interface UpdateUserDto {
-  name?: string;
-  email?: string;
-}
+export interface UpdateUserDto extends Partial<CreateUserDto> {}

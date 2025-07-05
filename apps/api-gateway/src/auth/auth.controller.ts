@@ -1,5 +1,13 @@
-import { Body, Controller, Logger, Post, Res, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Logger,
+  Post,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import {
   AuthResponseDto,
@@ -7,13 +15,12 @@ import {
   LoginDto,
   MessageResponseDto,
   RefreshTokenDto,
-  RegisterDto,
 } from '@worklynesia/common';
 
 import { jwtConfig } from '@worklynesia/common';
 import { KafkaClientService } from 'src/shared/kafka/kafka-client.service';
 
-@ApiTags('API AUTH GATEWAY')
+@ApiTags('Authentication API')
 @Controller()
 export class AuthController {
   constructor(private readonly kafkaClient: KafkaClientService) {}
@@ -55,21 +62,26 @@ export class AuthController {
     @Body() credentials: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.kafkaClient.send<AuthResponseDto>(
-      'login.user',
-      credentials,
-    );
-    this.logger.log(`User ${credentials.email} logged in successfully`);
+    try {
+      const result = await this.kafkaClient.send<AuthResponseDto>(
+        'login.user',
+        credentials,
+      );
+      this.logger.log(`User ${credentials.email} logged in successfully`);
 
-    this.setTokenCookies(
-      response,
-      {
-        accessToken: result.tokens?.accessToken || '',
-        refreshToken: result.tokens?.refreshToken || '',
-      },
-      credentials.rememberMe,
-    );
-    return result;
+      this.setTokenCookies(
+        response,
+        {
+          accessToken: result.tokens?.accessToken || '',
+          refreshToken: result.tokens?.refreshToken || '',
+        },
+        credentials.rememberMe,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Login Failed: ${error}`);
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
   @UseGuards(JwtAuthGuard)
   @Post('auth/refresh')
@@ -99,45 +111,5 @@ export class AuthController {
   logout(@Res({ passthrough: true }) response: Response) {
     this.clearTokenCookies(response);
     return { message: 'Logged out successfully' };
-  }
-
-  @Post('auth/register')
-  @ApiOperation({ summary: 'Register new user' })
-  @ApiBody({
-    type: RegisterDto,
-    description: 'User registration credentials',
-    examples: {
-      user: {
-        summary: 'Regular User',
-        value: {
-          email: 'user@example.com',
-          password: 'securepassword123',
-          role: 'user',
-        },
-      },
-      admin: {
-        summary: 'Admin User',
-        value: {
-          email: 'admin@example.com',
-          password: 'adminpassword123',
-          role: 'admin',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'User successfully registered',
-    type: AuthResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async register(@Body() user: RegisterDto) {
-    const result = await this.kafkaClient.send<AuthResponseDto>(
-      'register.user',
-      user,
-    );
-    this.logger.log(`User ${result.user.email} registered successfully`);
-
-    return result;
   }
 }
