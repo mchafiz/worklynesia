@@ -66,8 +66,6 @@ export const useAttendanceStore = create((set) => ({
       const data = await response.json();
 
       if (!response.ok) {
-        console.log(data);
-
         throw new Error(data.message || "Failed to check in");
       }
 
@@ -78,7 +76,6 @@ export const useAttendanceStore = create((set) => ({
       });
       return data;
     } catch (err) {
-      console.log(err);
       set({ error: err.message || "Failed to check in", loading: false });
       throw err;
     }

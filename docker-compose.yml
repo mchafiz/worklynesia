@@ -121,22 +121,22 @@ services:
   #     - worklynesia
 
   # Attendance Service
-  attendance-service:
-    build:
-      context: .
-      dockerfile: ./apps/attendance-service/Dockerfile
-    container_name: worklynesia_attendance
-    env_file: .env
-    environment:
-      DATABASE_URL: "postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE}"
-      KAFKA_BROKER: "kafka:9092"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    networks:
-      - worklynesia
+  # attendance-service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/attendance-service/Dockerfile
+  #   container_name: worklynesia_attendance
+  #   env_file: .env
+  #   environment:
+  #     DATABASE_URL: "postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE}"
+  #     KAFKA_BROKER: "kafka:9092"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     kafka:
+  #       condition: service_healthy
+  #   networks:
+  #     - worklynesia
 
   # Notification Service (WebSocket)
   # notification-service:

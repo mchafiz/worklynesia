@@ -1,34 +1,43 @@
 # Worklynesia
 
-Worklynesia is a modern HR management platform that helps Indonesian companies manage remote (WFH) and on-site employees while giving HR administrators real-time visibility into attendance, tasks, and overall workforce performance.
+Worklynesia is a modern web-based attendance system that enables companies to track employee attendance through precise location detection. The platform ensures accurate attendance recording by verifying employee locations during check-in and check-out, supporting both remote and on-site work arrangements.
 
 ## Key Features
 
-- Daily check-in / check-out with geo-tagged & selfie validation
-- Task & OKR tracking with progress dashboards
-- Real-time workforce timeline for HR admins and team leads
-- Role-based access (Employee, Team Lead, HR Admin, Super Admin)
-- Exportable reports (Excel / PDF)
+- **Location-Based Attendance**: GPS tracking for accurate attendance recording
+- Web-based and Mobile platform accessible from any device with internet connection
+- Employee self-service portal for attendance history
+- Manage Employee data and attendance records from HR dashboard
+- Check-in and check-out attendance
 
 ## Tech Stack
 
 This repository is a Turborepo monorepo powered by:
 
-- Next.js for the `web` (employee) and `admin` (HR) applications
-- TypeScript everywhere
-- React-Query & Zustand for state management
+- React.js for the `dashboard` application (employee and HR include one dashboard)
+- Zustand for state management
 - Material UI
 - Turborepo for build orchestration
-- ESLint / Prettier
+- Kafka
+- PostgreSQL
+- Prisma
+- Nest js
+- Docker
+- React Router
+- Vite
 
 ## Repository Structure
 
 ```text
 apps/
-  web/    # Employee web / PWA
-  admin/  # HR Admin dashboard
+  attendance-service/    # Attendance Service
+  notification-service/  # Notification Service
+  api-gateway/           # API Gateway
+  user-service/          # User Service
+  auth-service/          # Auth Service
+  dashboard/             # Dashboard
 packages/
-  ui/     # Shared React component library
+  common/                # Common packages
   eslint-config/
   tsconfig/
 ```
@@ -44,36 +53,39 @@ packages/
 2. Copy environment variables:
 
    ```bash
-   cp apps/web/.env.example apps/web/.env.local
-   cp apps/admin/.env.example apps/admin/.env.local
+   cp .env.example .env
    ```
 
-3. Run all apps in development mode:
+3. Run Docker Compose for kafka and postgres:
 
    ```bash
-   pnpm turbo dev
+   docker compose up -d
    ```
 
-   Open `http://localhost:3000` (web) and `http://localhost:3001` (admin) in your browser.
+4. Run Prisma Migrations:
 
-## Building for Production
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev
+   ```
 
-```bash
-pnpm turbo build
-```
+5. Build Package Common:
 
-## Deployment
+   ```bash
+   pnpm run build:common
+   ```
 
-Each app can be deployed individually (Vercel, Netlify, etc.) or together with Docker. See `apps/*/Dockerfile` for an example configuration.
+6. Run all apps in development mode:
 
-## Contributing
+   ```bash
+   pnpm run dev:all
+   ```
 
-Pull requests are welcome! Please open an issue first to discuss major changes.
+Access the applications:
 
-## License
+- Api Gateway: http://localhost:3000
+- Dashboard: http://localhost:5173
 
-MIT
+For documentation API Gateway, please refer to the [API Documentation](http://localhost:3000/api/docs).
 
----
-
-> This project started from the official Turborepo starter template. Refer to the Turborepo documentation if you need deeper monorepo usage details.
+⚠️ **Development Status**: This project is currently in active development phase. The Docker configuration is not yet fully stable for production use.

@@ -43,7 +43,6 @@ const LoginPage = () => {
     }
 
     const success = await login(email, password, rememberMe);
-    console.log(success);
     if (success) {
       // Redirect based on role
       const redirectPath = "/";

@@ -14,7 +14,6 @@ const useAuthStore = create((set) => ({
   // authStore.js
 
   setUser: (user) => {
-    console.log(user);
     set({ user });
   },
 
@@ -109,7 +108,6 @@ const useAuthStore = create((set) => ({
       },
     }).then(async (res) => {
       const data = await res.json();
-      console.log("holaa", data);
       set({
         loading: false,
         user: {
@@ -196,7 +194,6 @@ const useAuthStore = create((set) => ({
       }
 
       if (res.ok) {
-        console.log("woiiiiiii");
         const { user } = await res.json();
         set({ user, isAuthenticated: true, role: user.role, loading: false });
         return true;

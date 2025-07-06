@@ -51,8 +51,6 @@ const RoleBasedRoute = ({ allowedRoles, children }) => {
     }))
   );
 
-  console.log(role, "hai");
-
   // if (loading) {
   //   return (
   //     <Box

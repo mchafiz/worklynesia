@@ -202,7 +202,6 @@ const ProfilePage = () => {
     }
   };
 
-  console.log(user, "woii");
   if (!user) {
     return (
       <Box display="flex" justifyContent="center" mt={4}>

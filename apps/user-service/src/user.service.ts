@@ -55,7 +55,6 @@ export class UserService {
       where: { email: userAuth?.email, deletedAt: null },
     });
 
-    console.log(user);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
