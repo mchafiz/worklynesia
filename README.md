@@ -27,7 +27,7 @@ This repository is a Turborepo monorepo powered by:
 - Nest js
 - Docker
 - React Router
-- Vite
+- Microservice
 
 ## Repository Structure
 
