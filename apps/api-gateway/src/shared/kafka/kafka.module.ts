@@ -1,10 +1,15 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { KafkaClientService } from './kafka-client.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Global()
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../../../.env',
+    }),
     ClientsModule.registerAsync([
       {
         name: 'KAFKA_CLIENT',
@@ -12,7 +17,7 @@ import { KafkaClientService } from './kafka-client.service';
           transport: Transport.KAFKA,
           options: {
             client: {
-              brokers: ['localhost:9092'],
+              brokers: [process.env.KAFKA_BROKER || ''],
               clientId: 'api-gateway', // bisa parametrisasi nanti
             },
             consumer: {

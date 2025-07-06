@@ -31,7 +31,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env',
+      envFilePath: '../.env',
     }),
     PrismaModule,
     JwtModule.register({

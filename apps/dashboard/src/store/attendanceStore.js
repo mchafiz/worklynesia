@@ -4,9 +4,10 @@ const API_BASE_URL = "http://localhost:3000/api";
 
 export const useAttendanceStore = create((set) => ({
   isCheckedIn: false,
-  attendanceIn: null,
+
   attendanceOut: null,
   attendanceHistory: [],
+  currentAttendance: null,
   loading: false,
   error: null,
   setLoading: (loading) => set({ loading }),
@@ -72,7 +73,7 @@ export const useAttendanceStore = create((set) => ({
 
       set({
         isCheckedIn: true,
-        attendanceIn: data,
+        currentAttendance: data,
         loading: false,
       });
       return data;
@@ -99,8 +100,9 @@ export const useAttendanceStore = create((set) => ({
       }
 
       const data = await response.json();
+
       set({
-        attendanceIn: data,
+        currentAttendance: data,
         isCheckedIn: true,
         loading: false,
       });

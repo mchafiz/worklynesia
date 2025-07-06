@@ -1,13 +1,12 @@
 export const jwtConfig = {
   accessToken: {
-    secret: process.env.JWT_ACCESS_SECRET || "super-secret-access",
-    expiresIn: "15m",
+    secret: process.env.JWT_ACCESS_SECRET,
+    expiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
   },
   refreshToken: {
-    secret: process.env.JWT_REFRESH_SECRET || "super-secret-refresh",
-    expiresIn: "7d",
+    secret: process.env.JWT_REFRESH_SECRET,
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
   },
-  timezone: "Asia/Jakarta",
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

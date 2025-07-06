@@ -43,6 +43,7 @@ import {
 import { useAttendanceStore } from "../store/attendanceStore";
 import { useShallow } from "zustand/react/shallow";
 import { format, differenceInHours, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -70,6 +71,8 @@ export default function AttendancePage() {
     message: "",
     severity: "success",
   });
+
+  const navigate = useNavigate();
 
   const {
     checkIn,
@@ -852,6 +855,8 @@ export default function AttendancePage() {
                           color="primary"
                           onClick={() => {
                             // Handle view details
+
+                            navigate("/history-attendance");
                           }}
                           size="large"
                           sx={{

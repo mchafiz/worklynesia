@@ -9,7 +9,10 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../.env',
+    }),
     PrismaModule,
     ClientsModule.registerAsync([
       {
