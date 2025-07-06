@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -80,16 +81,41 @@ export class AttendanceController {
   @ApiResponse({ status: 201, description: 'Checkin successfully' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async checkin(@Body() body: AttendanceIn, @CurrentUser() user: JwtPayload) {
-    const result = await this.kafkaClient.send<Attendance>(
-      'attendance.checkIn',
-      {
-        ...body,
-        userId: user.sub,
-      },
-    );
-    this.logger.log(`User ${JSON.stringify(user)} checked in successfully`);
+    try {
+      const result = await this.kafkaClient.send<Attendance>(
+        'attendance.checkIn',
+        {
+          ...body,
+          userId: user.sub,
+        },
+      );
+      this.logger.log(`User ${JSON.stringify(user)} checked in successfully`);
 
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(`Checkin Failed: ${error}`);
+      throw new BadRequestException('Sudah check-in hari ini');
+    }
+  }
+
+  @Get('currentUserAttendance')
+  @ApiOperation({ summary: 'Get current user attendance' })
+  @ApiResponse({ status: 200, description: 'Attendance found' })
+  @ApiResponse({ status: 404, description: 'Attendance not found' })
+  async getCurrentUserAttendance(@CurrentUser() user: JwtPayload) {
+    try {
+      const result = await this.kafkaClient.send<Attendance>(
+        'attendance.currentUserAttendance',
+        {
+          userId: user.sub,
+        },
+      );
+      this.logger.log(`User ${JSON.stringify(user)} already checked in`);
+
+      return result;
+    } catch {
+      throw new BadRequestException('Belum ada  check-in hari ini');
+    }
   }
 
   @Post('checkout')

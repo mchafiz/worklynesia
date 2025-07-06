@@ -98,6 +98,25 @@ export class AuthService {
     };
   }
 
+  async changePassword(
+    user: UserAuth,
+    newPassword: string,
+    currentPassword: string,
+  ) {
+    this.logger.log(
+      `User ${user.id} changed password ${newPassword} ${currentPassword}`,
+    );
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.userAuth.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+  }
+
   private async generateTokens(
     user: UserAuth,
   ): Promise<AuthResponse['tokens']> {

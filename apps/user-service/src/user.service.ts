@@ -9,7 +9,7 @@ import {
   PrismaService,
   UpdateUserDto,
 } from '@worklynesia/common';
-import type { UserProfile } from '@prisma/client';
+import type { UserAuth, UserProfile } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -19,9 +19,29 @@ export class UserService {
 
   // Find all users
   async findAll(): Promise<UserProfile[]> {
-    return await this.prisma.userProfile.findMany({
+    const userAuthList = await this.prisma.userAuth.findMany({
       where: { deletedAt: null },
     });
+
+    const userProfiles = await this.prisma.userProfile.findMany({
+      where: {
+        email: { in: userAuthList.map((user) => user.email) },
+        deletedAt: null,
+      },
+    });
+
+    const userCombine = userProfiles.map((user) => {
+      const auth = userAuthList.find(
+        (auth) => auth.email === user.email,
+      ) as UserAuth;
+
+      return {
+        ...user,
+        role: auth?.role,
+      };
+    });
+
+    return userCombine;
   }
 
   // Find user by id
@@ -78,10 +98,19 @@ export class UserService {
   }
 
   // Update user
-  async update(id: string, data: UpdateUserDto): Promise<UserProfile> {
-    const user = await this.prisma.userProfile.update({
+  async update(id: string, userData: UpdateUserDto): Promise<UserProfile> {
+    this.logger.log(`Updating user ${id} ${userData.fullName}`);
+    const userAuth = await this.prisma.userAuth.findUnique({
       where: { id },
-      data,
+    });
+    if (!userAuth) throw new NotFoundException('User not found');
+    const user = await this.prisma.userProfile.update({
+      where: { email: userAuth?.email, deletedAt: null },
+      data: {
+        fullName: userData.fullName,
+        avatarUrl: userData.avatarUrl ?? '',
+        phoneNumber: userData.phoneNumber ?? '',
+      },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -89,8 +118,12 @@ export class UserService {
 
   // Soft delete user
   async delete(id: string): Promise<void> {
-    await this.prisma.userProfile.update({
+    const userAuth = await this.prisma.userAuth.findUnique({
       where: { id },
+    });
+    if (!userAuth) throw new NotFoundException('User not found');
+    await this.prisma.userProfile.update({
+      where: { email: userAuth?.email, deletedAt: null },
       data: { deletedAt: new Date() },
     });
   }

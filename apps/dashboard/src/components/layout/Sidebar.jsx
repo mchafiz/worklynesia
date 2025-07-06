@@ -14,23 +14,14 @@ import {
 import {
   Dashboard as DashboardIcon,
   People as UsersIcon,
-  Settings as SettingsIcon,
-  BarChart as ReportsIcon,
-  ShoppingCart as OrdersIcon,
   Store as ProductsIcon,
+  AccountCircle as AccountCircleIcon,
 } from "@mui/icons-material";
 import { Link as RouterLink, useLocation } from "react-router-dom";
+import useAuthStore from "../../store/authStore";
+import { useShallow } from "zustand/react/shallow";
 
 const drawerWidth = 240;
-
-const menuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: "/", exact: true },
-  { text: "Users", icon: <UsersIcon />, path: "/users" },
-  { text: "Products", icon: <ProductsIcon />, path: "/products" },
-  { text: "Orders", icon: <OrdersIcon />, path: "/orders" },
-  { text: "Reports", icon: <ReportsIcon />, path: "/reports" },
-  { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
-];
 
 const isActive = (itemPath, currentPath) => {
   // Special case for home/dashboard
@@ -48,6 +39,52 @@ const isActive = (itemPath, currentPath) => {
 };
 const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const location = useLocation();
+  const { role } = useAuthStore(
+    useShallow((state) => ({
+      role: state.role,
+    }))
+  );
+
+  // Base menu items that are visible to all roles
+  const baseMenuItems = [
+    {
+      text: "Dashboard",
+      icon: <DashboardIcon />,
+      path: "/dashboard",
+      exact: true,
+      roles: ["user", "admin"], // Both roles can see this
+    },
+  ];
+
+  // Role-specific menu items
+  const roleBasedMenuItems = [
+    {
+      text: "Attendance",
+      icon: <UsersIcon />,
+      path: "/attendance",
+      roles: ["user", "admin"],
+    },
+    {
+      text: "History Attendance",
+      icon: <ProductsIcon />,
+      path: "/history-attendance",
+      roles: ["user", "admin"],
+    },
+    {
+      text: "Employees",
+      icon: <AccountCircleIcon />,
+      path: "/employees",
+      roles: ["admin"], // Only admin can see this
+    },
+  ];
+
+  // Combine and filter menu items based on user role
+  const menuItems = [
+    ...baseMenuItems,
+    ...roleBasedMenuItems.filter((item) =>
+      item.roles.includes(role?.toLowerCase())
+    ),
+  ];
 
   const drawer = (
     <div>

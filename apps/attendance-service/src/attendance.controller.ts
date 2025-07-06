@@ -17,6 +17,11 @@ export class AttendanceController {
     return this.appService.checkOut(data);
   }
 
+  @MessagePattern('attendance.currentUserAttendance')
+  async getCurrentUserAttendance(data: { userId: string }) {
+    return this.appService.getCurrentUserAttendance(data);
+  }
+
   @MessagePattern('attendance.history')
   async getHistory(data: { userId: string; from?: string; to?: string }) {
     return this.appService.getHistory(data);

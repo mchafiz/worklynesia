@@ -22,7 +22,9 @@ import { UserProfile } from '@prisma/client';
 import {
   CreateUserDto,
   CsvFileInterceptor,
+  CurrentUser,
   JwtAuthGuard,
+  JwtPayload,
   UpdateUserDto,
 } from '@worklynesia/common';
 
@@ -86,24 +88,24 @@ export class UserController {
     return { message: `${users.length} users sent to Kafka` };
   }
 
-  @Get('users/:id')
+  @Get('user')
   @ApiOperation({ summary: 'Find user by id' })
   @ApiResponse({
     status: 201,
     description: 'User successfully found',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async findByIdUser(@Param('id') id: string) {
-    const result = await this.kafkaClient.send<UserProfile>(
+  async findByIdUser(@CurrentUser() user: JwtPayload) {
+    const result = await this.kafkaClient.send<JwtPayload>(
       'findById.user',
-      id,
+      user.sub,
     );
-    this.logger.log(`Found user with id: ${result.id}`);
+    this.logger.log(`Found user with id: ${JSON.stringify(result)}`);
 
     return result;
   }
 
-  @Post('users')
+  @Post('user')
   @ApiOperation({ summary: 'Create user' })
   @ApiBody({
     schema: {
@@ -133,20 +135,44 @@ export class UserController {
     );
     this.logger.log(`Created user with id: ${result.id}`);
 
-    return result;
+    return { ...result, role: user.role };
   }
 
-  @Put('users/:id')
+  @Put('user')
   @ApiOperation({ summary: 'Update user' })
   @ApiResponse({
     status: 201,
     description: 'User successfully updated',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async updateUser(@Param('id') id: string, @Body() user: UpdateUserDto) {
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string', example: 'John Doe Updated' },
+        email: { type: 'string', example: 'john.updated@example.com' },
+        phoneNumber: { type: 'string', example: '+6281234567890' },
+        avatarUrl: {
+          type: 'string',
+          example: 'https://example.com/avatars/john-updated.jpg',
+          nullable: true,
+        },
+        role: {
+          type: 'string',
+          enum: ['user', 'admin'],
+          example: 'user',
+          nullable: true,
+        },
+      },
+    },
+  })
+  async updateUser(
+    @Body() userData: UpdateUserDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     const result = await this.kafkaClient.send<UserProfile>('update.user', {
-      id,
-      user,
+      id: user.sub,
+      user: userData,
     });
     this.logger.log(`User ${result.id} updated successfully`);
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Logger } from '@nestjs/common';
 import type { UserProfile } from '@prisma/client';
 import { UserService } from './user.service';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateUserDto, UpdateUserDto, Log } from '@worklynesia/common';
 
 @Controller('users')
@@ -40,30 +40,20 @@ export class UserController {
     }
   }
 
-  @EventPattern('create.user')
+  @MessagePattern('create.user')
   @Log({
     service: 'user-service',
     action: 'create-user',
     entityType: 'user',
-    metadata: (data: CreateUserDto) => ({ email: data.email }),
+    metadata: () => {
+      return 'create user action';
+    },
   })
-  async create(@Payload() userData: CreateUserDto): Promise<void> {
+  async create(@Payload() userData: CreateUserDto): Promise<UserProfile> {
     this.logger.log(`Creating user: ${JSON.stringify(userData)}`);
+    const user: UserProfile = await this.userService.create(userData);
 
-    try {
-      const user: UserProfile = await this.userService.create(userData);
-      this.logger.log(`User created: ${user.email}`);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        this.logger.warn(`Skipping user: ${error.message}`);
-      } else {
-        this.logger.error(
-          '❌ Failed to create user:',
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-      // ⚠️ PENTING: JANGAN lempar error agar Kafka bisa commit offset
-    }
+    return user;
   }
 
   @MessagePattern('update.user')
@@ -71,9 +61,9 @@ export class UserController {
     service: 'user-service',
     action: 'update-user',
     entityType: 'user',
-    entityId: (params: { id: string }) => params.id,
-    metadata: (data: { user: UpdateUserDto }) => ({
-      updatedFields: Object.keys(data.user),
+    entityId: (data: { id: string; user: UpdateUserDto }) => data.id,
+    metadata: (data: { id: string; user: UpdateUserDto }) => ({
+      updatedFields: data.user ? Object.keys(data.user) : [],
     }),
   })
   update(data: { id: string; user: UpdateUserDto }): Promise<UserProfile> {

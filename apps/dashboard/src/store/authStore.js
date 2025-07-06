@@ -13,6 +13,46 @@ const useAuthStore = create((set) => ({
 
   // authStore.js
 
+  setUser: (user) => {
+    console.log(user);
+    set({ user });
+  },
+
+  changePassword: async (newPassword, currentPassword) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newPassword, currentPassword }),
+        credentials: "include", // penting untuk cookie HttpOnly
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Change password failed");
+      }
+
+      set({
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        error: null,
+        role: null,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Change password error:", error);
+      set({
+        error: error.message || "Change password failed",
+        loading: false,
+      });
+      return false;
+    }
+  },
   login: async (email, password, rememberMe) => {
     set({ loading: true, error: null });
     try {
@@ -58,23 +98,38 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  getUserById: (id) => {
+  getUserById: async () => {
     set({ loading: true, error: null });
 
-    return fetch(`${API_BASE_URL}/users/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/user`, {
       method: "GET",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
+    }).then(async (res) => {
+      const data = await res.json();
+      console.log("holaa", data);
+      set({
+        loading: false,
+        user: {
+          email: data.email,
+          name: data.fullName,
+          id: data.id,
+          role: data.role,
+          avatar: data.avatarUrl,
+          phoneNumber: data.phoneNumber,
+        },
+      });
     });
+    return response;
   },
 
   // In your authStore.js
-  updateProfile: async (profileData, user) => {
+  updateProfile: async (profileData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`${API_BASE_URL}/user/${user.id}`, {
+      const response = await fetch(`${API_BASE_URL}/user`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -89,10 +144,14 @@ const useAuthStore = create((set) => ({
       }
 
       const updatedUser = await response.json();
-      set((state) => ({
-        user: { ...state.user, ...updatedUser },
+      set({
+        user: {
+          fullName: updatedUser.fullName,
+          avatarUrl: updatedUser.avatarUrl,
+          phoneNumber: updatedUser.phoneNumber,
+        },
         loading: false,
-      }));
+      });
     } catch (error) {
       set({ error: error.message, loading: false });
       throw error;
@@ -112,7 +171,8 @@ const useAuthStore = create((set) => ({
   },
 
   // Di authStore.js
-  checkAuth: async () => {
+  checkAuthPrivate: async () => {
+    set({ loading: true, error: null });
     try {
       let res = await fetch(`${API_BASE_URL}/auth/verify`, {
         method: "GET",
@@ -131,19 +191,43 @@ const useAuthStore = create((set) => ({
             method: "GET",
             credentials: "include",
           });
+          set({ loading: false });
         }
       }
 
       if (res.ok) {
+        console.log("woiiiiiii");
         const { user } = await res.json();
-        set({ user, isAuthenticated: true, role: user.role });
+        set({ user, isAuthenticated: true, role: user.role, loading: false });
         return true;
       }
 
-      set({ user: null, isAuthenticated: false, role: null });
+      set({ user: null, isAuthenticated: false, role: null, loading: false });
       return false;
     } catch {
-      set({ user: null, isAuthenticated: false, role: null });
+      set({ user: null, isAuthenticated: false, role: null, loading: false });
+      return false;
+    }
+  },
+
+  checkAuthPublic: async () => {
+    set({ loading: true, error: null });
+    try {
+      let res = await fetch(`${API_BASE_URL}/auth/verify`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const { user } = await res.json();
+        set({ user, isAuthenticated: true, role: user.role, loading: false });
+        return true;
+      }
+
+      set({ user: null, isAuthenticated: false, role: null, loading: false });
+      return false;
+    } catch {
+      set({ user: null, isAuthenticated: false, role: null, loading: false });
       return false;
     }
   },

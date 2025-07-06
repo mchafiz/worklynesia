@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -13,44 +12,69 @@ import { SnackbarProvider } from "notistack";
 import CustomThemeProvider from "./context/ThemeProvider";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
-import useAuthStore from "./store/authStore";
+import ProfilePage from "./pages/ProfilePage";
 import Layout from "./components/layout/Layout";
-import { useShallow } from "zustand/react/shallow";
-import PublicRoute from "./components/PublicRoute";
-import ProfilePage from "./pages/PorfilePage";
 import AppInitializer from "./components/AppInitializer";
+import PublicRoute from "./components/PublicRoute";
+import useAuthStore from "./store/authStore";
+import { useShallow } from "zustand/react/shallow";
+import AttendancePage from "./pages/AttendancePage";
+import HistoryAttendancePage from "./pages/HistoryAttendancePage";
+import EmployeesPage from "./pages/EmployeesPage";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, checkAuth, loading } = useAuthStore(
+  const { isAuthenticated, checkAuthPrivate, loading } = useAuthStore(
     useShallow((state) => ({
       isAuthenticated: state.isAuthenticated,
-      checkAuth: state.checkAuth,
+      checkAuthPrivate: state.checkAuthPrivate,
       loading: state.loading,
     }))
   );
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+    if (!isAuthenticated && !loading) {
+      checkAuthPrivate();
+    }
+  }, []);
 
   return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+const RoleBasedRoute = ({ allowedRoles, children }) => {
+  const { isAuthenticated, role } = useAuthStore(
+    useShallow((state) => ({
+      isAuthenticated: state.isAuthenticated,
+      role: state.role,
+      loading: state.loading,
+    }))
+  );
+
+  console.log(role, "hai");
+
+  // if (loading) {
+  //   return (
+  //     <Box
+  //       minHeight="100vh"
+  //       display="flex"
+  //       justifyContent="center"
+  //       alignItems="center"
+  //     >
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to="/" />; // atau tampilkan 403 Page
+  }
+
+  return children;
 };
 
 function App() {
@@ -62,6 +86,7 @@ function App() {
           <Router>
             <AppInitializer>
               <Routes>
+                {/* Public Route */}
                 <Route
                   path="/login"
                   element={
@@ -71,6 +96,7 @@ function App() {
                   }
                 />
 
+                {/* Protected Routes */}
                 <Route
                   path="/"
                   element={
@@ -79,22 +105,45 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
-                  <Route index element={<HomePage />} />
-
+                  <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route
-                    path="admin"
+                    path="dashboard"
                     element={
-                      <ProtectedRoute allowedRoles={["admin"]}>
+                      <RoleBasedRoute allowedRoles={["admin", "user"]}>
                         <HomePage />
-                      </ProtectedRoute>
+                      </RoleBasedRoute>
                     }
                   />
                   <Route
                     path="profile"
                     element={
-                      <ProtectedRoute allowedRoles={["user", "admin"]}>
-                        <HomePage />
-                      </ProtectedRoute>
+                      <RoleBasedRoute allowedRoles={["admin", "user"]}>
+                        <ProfilePage />
+                      </RoleBasedRoute>
+                    }
+                  />
+                  <Route
+                    path="/attendance"
+                    element={
+                      <RoleBasedRoute allowedRoles={["admin", "user"]}>
+                        <AttendancePage />
+                      </RoleBasedRoute>
+                    }
+                  />
+                  <Route
+                    path="/history-attendance"
+                    element={
+                      <RoleBasedRoute allowedRoles={["admin", "user"]}>
+                        <HistoryAttendancePage />
+                      </RoleBasedRoute>
+                    }
+                  />
+                  <Route
+                    path="employees"
+                    element={
+                      <RoleBasedRoute allowedRoles={["admin"]}>
+                        <EmployeesPage />
+                      </RoleBasedRoute>
                     }
                   />
                 </Route>

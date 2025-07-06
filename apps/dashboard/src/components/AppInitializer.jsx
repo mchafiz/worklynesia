@@ -4,12 +4,12 @@ import { CircularProgress, Box } from "@mui/material";
 import useAuthStore from "../store/authStore";
 
 const AppInitializer = ({ children }) => {
-  const { checkAuth } = useAuthStore();
+  const { checkAuthPrivate } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     const verify = async () => {
-      await checkAuth();
+      await checkAuthPrivate();
       setIsChecking(false);
     };
     verify();

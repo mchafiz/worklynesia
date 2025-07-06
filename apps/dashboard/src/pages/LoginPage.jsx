@@ -46,8 +46,7 @@ const LoginPage = () => {
     console.log(success);
     if (success) {
       // Redirect based on role
-      const { role } = useAuthStore.getState();
-      const redirectPath = role === "admin" ? "/admin" : "/";
+      const redirectPath = "/";
       navigate(redirectPath, { replace: true });
     } else {
       setError("Invalid email or password");

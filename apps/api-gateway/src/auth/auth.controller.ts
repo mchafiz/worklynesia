@@ -4,16 +4,18 @@ import {
   Get,
   Logger,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import {
   AuthResponseDto,
   CurrentUser,
   JwtAuthGuard,
+  JwtPayload,
   LoginDto,
   MessageResponseDto,
   RefreshTokenDto,
@@ -22,7 +24,6 @@ import {
 
 import { jwtConfig } from '@worklynesia/common';
 import { KafkaClientService } from 'src/shared/kafka/kafka-client.service';
-import { UserAuth } from '@prisma/client';
 
 @ApiTags('Authentication API')
 @Controller()
@@ -87,6 +88,54 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials');
     }
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('auth/change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({
+    status: 201,
+    description: 'Password changed successfully',
+    type: MessageResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async changePassword(
+    @Body()
+    passwordData: {
+      newPassword: string;
+      currentPassword: string;
+    },
+    @CurrentUser() user: JwtPayload,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      this.logger.log(
+        `Change password request received. User object: ${JSON.stringify(user)}`,
+      );
+
+      const userId = user.sub;
+
+      if (!userId) {
+        this.logger.error('No user ID found in request. User object:', user);
+        throw new UnauthorizedException('User not properly authenticated');
+      }
+
+      await this.kafkaClient.send<MessageResponseDto>('change.password', {
+        newPassword: passwordData.newPassword,
+        currentPassword: passwordData.currentPassword,
+        userId: userId,
+      });
+
+      this.clearTokenCookies(response);
+      this.logger.log(
+        `Password change initiated for user: ${user.email || 'unknown'}`,
+      );
+      return { message: 'Password change request received' };
+    } catch (error) {
+      this.logger.error('Change Password Failed:', error);
+      throw new UnauthorizedException('Failed to process password change');
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('auth/refresh')
   @ApiOperation({ summary: 'Refresh access token' })
@@ -96,21 +145,49 @@ export class AuthController {
     type: MessageResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
-    const result = await this.kafkaClient.send<MessageResponseDto>(
-      'refresh.token',
-      refreshTokenDto,
-    );
-    this.logger.log(`User ${result.message} refreshed tokens successfully`);
-    return result;
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      const result = await this.kafkaClient.send<MessageResponseDto>(
+        'refresh.token',
+        refreshTokenDto,
+      );
+      this.logger.log(`User ${result.message} refreshed tokens successfully`);
+      return result;
+    } catch (error) {
+      this.clearTokenCookies(response);
+      this.logger.error(`Refresh Failed: ${error}`);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('auth/verify')
   @ApiOperation({ summary: 'Verify authentication' })
+  @ApiResponse({ status: 200, description: 'User is authenticated' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  verify(@CurrentUser() user: UserAuth) {
-    return { user };
+  verify(
+    @CurrentUser() user: JwtPayload,
+    @Res({ passthrough: true }) response: Response,
+    @Req() request: Request,
+  ) {
+    try {
+      return { user };
+    } catch {
+      const refreshToken = request.cookies?.refreshToken as string;
+
+      if (!refreshToken) {
+        this.clearTokenCookies(response);
+      }
+
+      throw new UnauthorizedException(
+        refreshToken
+          ? 'Session expired. Refreshing token...'
+          : 'Session expired. Please login again.',
+      );
+    }
   }
 
   @Post('auth/logout')
