@@ -62,20 +62,31 @@ packages/
    docker compose up -d
    ```
 
-4. Run Prisma Migrations:
+4. Clone the logging service repository:
+
+   ```bash
+   git clone https://github.com/mchafiz/worklynesia-logging.git
+   cd worklynesia-logging
+   pnpm install
+   docker-compose up -d
+   npx prisma generate
+   npx prisma migrate dev
+   ```
+
+5. Run Prisma Migrations:
 
    ```bash
    npx prisma generate
    npx prisma migrate dev
    ```
 
-5. Build Package Common:
+6. Build Package Common:
 
    ```bash
    pnpm run build:common
    ```
 
-6. Run all apps in development mode:
+7. Run all apps in development mode:
 
    ```bash
    pnpm run dev:all
