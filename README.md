@@ -1,3 +1,6 @@
+![Worklynesia Preview](./preview/workly.png)
+![Worklynesia Preview](./preview/workly2.png)
+
 # Worklynesia
 
 Worklynesia is a modern web-based attendance system that enables companies to track employee attendance through precise location detection. The platform ensures accurate attendance recording by verifying employee locations during check-in and check-out, supporting both remote and on-site work arrangements.
@@ -69,7 +72,7 @@ packages/
    cd worklynesia-logging
    pnpm install
    docker-compose up -d
-   npx prisma generate
+      npx prisma generate
    npx prisma migrate dev
    ```
 
