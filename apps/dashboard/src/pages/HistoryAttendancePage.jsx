@@ -399,7 +399,7 @@ const HistoryAttendancePage = () => {
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={enGB}>
       <Box p={isMobile ? 1 : 3}>
         <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-          Riwayat Kehadiran
+          History Attendance
         </Typography>
 
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -455,16 +455,6 @@ const HistoryAttendancePage = () => {
                 <MenuItem value="leave">Cuti</MenuItem>
               </Select>
             </FormControl>
-            <Button
-              variant="contained"
-              onClick={fetchHistory}
-              sx={{
-                minWidth: isMobile ? "100%" : "auto",
-                height: isMobile ? "40px" : "56px",
-              }}
-            >
-              Terapkan
-            </Button>
           </Stack>
         </Paper>
 

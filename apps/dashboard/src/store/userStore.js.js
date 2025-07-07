@@ -10,6 +10,38 @@ export const userStore = create((set) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 
+  uploadAvatar: async (file) => {
+    set({
+      loading: {
+        uploadAvatar: true,
+      },
+      error: null,
+    });
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const response = await fetch(`${API_BASE_URL}/upload-avatar`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      console.log(response);
+
+      const data = await response.json();
+      set((prev) => ({
+        ...prev,
+        loading: {
+          uploadAvatar: false,
+        },
+      }));
+      return data;
+    } catch (err) {
+      set({ error: err.message || "Failed to upload avatar", loading: false });
+      throw err;
+    }
+  },
+
   uploadUsers: async (file) => {
     set({
       loading: {

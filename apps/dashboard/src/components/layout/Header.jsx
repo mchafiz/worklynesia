@@ -20,7 +20,7 @@ import {
   Person as PersonIcon,
 } from "@mui/icons-material";
 import useAuthStore from "../../store/authStore";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeContext from "../../context/ThemeContext";
 import { useShallow } from "zustand/react/shallow";
@@ -29,10 +29,11 @@ const Header = ({ onToggleSidebar }) => {
   const context = useContext(ThemeContext);
 
   const { mode, toggleColorMode } = context;
-  const { user, logout } = useAuthStore(
+  const { user, logout, getUserById } = useAuthStore(
     useShallow((state) => ({
       user: state.user,
       logout: state.logout,
+      getUserById: state.getUserById,
     }))
   );
   const [anchorEl, setAnchorEl] = useState(null);
@@ -41,6 +42,13 @@ const Header = ({ onToggleSidebar }) => {
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
+  useEffect(() => {
+    const fetchUserById = async () => {
+      await getUserById();
+    };
+    fetchUserById();
+  }, []);
 
   const handleClose = () => {
     setAnchorEl(null);
@@ -51,6 +59,8 @@ const Header = ({ onToggleSidebar }) => {
     navigate("/login");
     handleClose();
   };
+
+  console.log(user, "bca");
 
   return (
     <AppBar
@@ -96,8 +106,8 @@ const Header = ({ onToggleSidebar }) => {
             aria-haspopup="true"
           >
             <Avatar
-              alt={user?.name}
-              src={user?.avatar}
+              alt={user?.avatar}
+              src={`http://localhost:3001/${user?.avatar}`}
               sx={{ width: 32, height: 32 }}
             >
               {user?.name?.charAt(0)?.toUpperCase()}
@@ -142,12 +152,7 @@ const Header = ({ onToggleSidebar }) => {
             <MenuItem onClick={() => navigate("/profile")}>
               <Avatar /> Profile
             </MenuItem>
-            <MenuItem onClick={() => navigate("/settings")}>
-              <ListItemIcon>
-                <SettingsIcon fontSize="small" />
-              </ListItemIcon>
-              Settings
-            </MenuItem>
+
             <Divider />
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>

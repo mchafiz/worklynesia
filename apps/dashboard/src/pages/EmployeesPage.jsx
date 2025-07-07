@@ -206,7 +206,6 @@ const EmployeesPage = () => {
                     <TableCell align="center">Status</TableCell>
                   </>
                 )}
-                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -219,7 +218,7 @@ const EmployeesPage = () => {
                         {employee.avatarUrl ? (
                           <Box
                             component="img"
-                            src={employee.avatarUrl}
+                            src={`http://localhost:3001/${employee.avatarUrl}`}
                             alt={employee.fullName}
                             sx={{
                               width: 32,
@@ -292,28 +291,6 @@ const EmployeesPage = () => {
                         </TableCell>
                       </>
                     )}
-                    <TableCell align="right">
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        justifyContent="flex-end"
-                      >
-                        {isMobile && (
-                          <Tooltip title="Status">
-                            <Switch
-                              size="small"
-                              checked={employee.isActive}
-                              disabled={employee.email === user?.email}
-                            />
-                          </Tooltip>
-                        )}
-                        <Tooltip title="Edit">
-                          <IconButton size="small">
-                            {/* <EditIcon fontSize="small" /> */}
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
                   </TableRow>
                 ))}
             </TableBody>

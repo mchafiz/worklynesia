@@ -3,6 +3,8 @@ import type { UserProfile } from '@prisma/client';
 import { UserService } from './user.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateUserDto, UpdateUserDto, Log } from '@worklynesia/common';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Controller('users')
 export class UserController {
@@ -54,6 +56,27 @@ export class UserController {
     const user: UserProfile = await this.userService.create(userData);
 
     return user;
+  }
+
+  @MessagePattern('upload.avatar')
+  async handleUploadAvatar(@Payload() data: any) {
+    const { userId, filename, mimetype, buffer } = data;
+    const decodedBuffer = Buffer.from(buffer, 'base64');
+
+    const uploadPath = path.join(__dirname, '..', 'uploads', 'avatars');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    const fileExt = path.extname(filename);
+    const safeFileName = `${userId}-${Date.now()}${fileExt}`;
+    const fullPath = path.join(uploadPath, safeFileName);
+
+    fs.writeFileSync(fullPath, decodedBuffer);
+
+    this.userService.uploadAvatar(userId, safeFileName);
+
+    return { status: 'ok', filename: safeFileName };
   }
 
   @MessagePattern('update.user')

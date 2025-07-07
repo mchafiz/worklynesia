@@ -30,6 +30,7 @@ import {
 
 import { KafkaClientService } from 'src/shared/kafka/kafka-client.service';
 import { UserService } from './user.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @UseGuards(JwtAuthGuard)
 @ApiTags('User API')
@@ -136,6 +137,36 @@ export class UserController {
     this.logger.log(`Created user with id: ${result.id}`);
 
     return { ...result, role: user.role };
+  }
+
+  @Post('upload-avatar')
+  @UseInterceptors(FileInterceptor('avatar'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const { buffer, originalname, mimetype } = file;
+    const userId = user.sub;
+
+    // Kirim buffer + metadata ke user-service
+    return this.kafkaClient.send('upload.avatar', {
+      userId,
+      filename: originalname,
+      mimetype,
+      buffer: buffer.toString('base64'),
+    });
   }
 
   @Put('user')

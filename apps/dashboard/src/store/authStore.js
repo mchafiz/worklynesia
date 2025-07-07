@@ -145,7 +145,6 @@ const useAuthStore = create((set) => ({
       set({
         user: {
           fullName: updatedUser.fullName,
-          avatarUrl: updatedUser.avatarUrl,
           phoneNumber: updatedUser.phoneNumber,
         },
         loading: false,

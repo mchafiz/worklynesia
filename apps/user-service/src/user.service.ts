@@ -96,6 +96,17 @@ export class UserService {
     return createdUser;
   }
 
+  async uploadAvatar(userId: string, safeFilename: string) {
+    const userAuth = await this.findById(userId);
+    await this.prisma.userProfile.update({
+      where: { email: userAuth?.email },
+      data: {
+        avatarUrl: `uploads/avatars/${safeFilename}`,
+      },
+    });
+    return { status: 'ok', filename: safeFilename };
+  }
+
   // Update user
   async update(id: string, userData: UpdateUserDto): Promise<UserProfile> {
     this.logger.log(`Updating user ${id} ${userData.fullName}`);

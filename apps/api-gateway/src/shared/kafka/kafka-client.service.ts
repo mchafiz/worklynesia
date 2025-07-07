@@ -21,6 +21,7 @@ export class KafkaClientService implements OnModuleInit {
       'attendance.history',
       'attendance.currentUserAttendance',
       'change.password',
+      'upload.avatar',
     ];
 
     topics.forEach((topic) => {

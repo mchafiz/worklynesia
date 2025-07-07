@@ -15,6 +15,7 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import useAuthStore from "../store/authStore";
 import { PhotoCamera } from "@mui/icons-material";
+import { userStore } from "../store/userStore.js";
 
 const ProfilePage = () => {
   const { user, updateProfile, getUserById, logout } = useAuthStore(
@@ -23,6 +24,12 @@ const ProfilePage = () => {
       logout: state.logout,
       updateProfile: state.updateProfile,
       getUserById: state.getUserById,
+    }))
+  );
+
+  const { uploadAvatar } = userStore(
+    useShallow((state) => ({
+      uploadAvatar: state.uploadAvatar,
     }))
   );
 
@@ -39,6 +46,7 @@ const ProfilePage = () => {
     email: "",
     phoneNumber: "",
     avatar: "",
+    avatarFile: null,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -62,7 +70,7 @@ const ProfilePage = () => {
         fullName: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        avatar: user.avatar,
+        avatar: `http://localhost:3001/${user.avatar}`,
       });
     }
   }, [user]);
@@ -84,13 +92,13 @@ const ProfilePage = () => {
       // Here you would typically upload the file to your server
       // For now, we'll create a local URL for preview
       const imageUrl = URL.createObjectURL(file);
+
       setFormData((prev) => ({
         ...prev,
         avatar: imageUrl,
-        avatarFile: file, // Store the file object for later upload
+        avatarFile: file,
       }));
     } catch (error) {
-      console.error("Error uploading image:", error);
       setSnackbar({
         open: true,
         message: "Failed to upload image",
@@ -106,12 +114,14 @@ const ProfilePage = () => {
     setIsLoading(true);
 
     try {
-      // Here you would typically send the form data to your API
       await updateProfile({
         fullName: formData.fullName,
         phoneNumber: formData.phoneNumber,
-        avatar: formData.avatar, // This would be the URL from your server
       });
+
+      await uploadAvatar(formData.avatarFile);
+
+      await getUserById();
 
       setSnackbar({
         open: true,
@@ -120,7 +130,6 @@ const ProfilePage = () => {
       });
       setEditMode(false);
     } catch (error) {
-      console.error("Error updating profile:", error);
       setSnackbar({
         open: true,
         message: error.message || "Failed to update profile",
@@ -183,7 +192,7 @@ const ProfilePage = () => {
       });
 
       logout();
-      // Reset form
+
       setPasswordData({
         currentPassword: "",
         newPassword: "",
