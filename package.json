@@ -9,6 +9,7 @@
     "build:common": "cd packages/common && pnpm run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "seed:admin": "cd packages/common && pnpm run seed:admin",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules"
