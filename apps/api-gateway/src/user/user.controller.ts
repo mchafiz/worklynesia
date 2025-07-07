@@ -161,7 +161,10 @@ export class UserController {
     const userId = user.sub;
 
     // Kirim buffer + metadata ke user-service
-    return this.kafkaClient.send('upload.avatar', {
+    return this.kafkaClient.send<{
+      status: string;
+      filename: string;
+    }>('upload.avatar', {
       userId,
       filename: originalname,
       mimetype,

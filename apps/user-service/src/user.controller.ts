@@ -59,8 +59,10 @@ export class UserController {
   }
 
   @MessagePattern('upload.avatar')
-  async handleUploadAvatar(@Payload() data: any) {
-    const { userId, filename, mimetype, buffer } = data;
+  async handleUploadAvatar(
+    @Payload() data: { userId: string; filename: string; buffer: string },
+  ) {
+    const { userId, filename, buffer } = data;
     const decodedBuffer = Buffer.from(buffer, 'base64');
 
     const uploadPath = path.join(__dirname, '..', 'uploads', 'avatars');
@@ -74,7 +76,12 @@ export class UserController {
 
     fs.writeFileSync(fullPath, decodedBuffer);
 
-    this.userService.uploadAvatar(userId, safeFileName);
+    try {
+      await this.userService.uploadAvatar(userId, safeFileName);
+    } catch (error) {
+      fs.unlinkSync(fullPath);
+      throw error;
+    }
 
     return { status: 'ok', filename: safeFileName };
   }

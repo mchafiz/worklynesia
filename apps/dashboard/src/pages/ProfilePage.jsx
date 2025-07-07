@@ -98,7 +98,7 @@ const ProfilePage = () => {
         avatar: imageUrl,
         avatarFile: file,
       }));
-    } catch (error) {
+    } catch {
       setSnackbar({
         open: true,
         message: "Failed to upload image",
